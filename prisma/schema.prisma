@@ -1,0 +1,140 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mongodb"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id        String   @id @default(auto()) @map("_id") @db.ObjectId
+  name      String
+  email     String   @unique
+  password  String
+  phone     String   @unique
+  role      Role     @default(RIDER)
+  
+  // Location data (embedded document)
+  currentLocation Location?
+  
+  // Driver-specific fields
+  isOnline       Boolean @default(false)
+  driverDetails  DriverDetails?
+  
+  // Relationships - ONE user can have MULTIPLE rides as rider AND as driver
+  ridesAsRider   Ride[] @relation("RiderRides")
+  ridesAsDriver  Ride[] @relation("DriverRides")
+  
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+enum Role {
+  RIDER
+  DRIVER
+  BOTH
+}
+
+type Location {
+  type        String   // Must be "Point" for GeoJSON
+  coordinates Float[]  // [longitude, latitude] - ORDER MATTERS!
+  address     String?
+  updatedAt   DateTime @default(now())
+}
+
+type DriverDetails {
+  vehicleType   VehicleType
+  vehicleNumber String
+  vehicleModel  String
+  licensePlate  String
+  rating        Float     @default(5.0)
+  totalRides    Int       @default(0)
+}
+
+enum VehicleType {
+  BIKE
+  AUTO
+  CAR
+}
+
+model Ride {
+  id        String   @id @default(auto()) @map("_id") @db.ObjectId
+  
+  // References to users
+  riderId   String   @db.ObjectId
+  rider     User     @relation("RiderRides", fields: [riderId], references: [id], onDelete: Cascade)
+  
+  driverId  String?  @db.ObjectId  // Optional until driver accepts
+  driver    User?    @relation("DriverRides", fields: [driverId], references: [id], onDelete: Cascade)
+  
+  // Ride details
+  status    RideStatus @default(REQUESTED)
+  pickup    Location
+  dropoff   Location
+  
+  // Route tracking (array of coordinates during ride)
+  route     Float[]  @default([])  // Array of [lng, lat] pairs
+  
+  // Fare breakdown
+  fare      Fare?
+  
+  // Payment
+  payment   Payment?
+  
+  // Timestamps for ride lifecycle
+  requestedAt  DateTime  @default(now())
+  acceptedAt   DateTime?
+  startedAt    DateTime?
+  completedAt  DateTime?
+  
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  
+  @@index([riderId])
+  @@index([driverId])
+  @@index([status])
+}
+
+enum RideStatus {
+  REQUESTED
+  ACCEPTED
+  ARRIVING
+  STARTED
+  COMPLETED
+  CANCELLED
+}
+
+type Fare {
+  baseFare      Float
+  distanceFare  Float
+  timeFare      Float
+  total         Float
+  distance      Float  // in kilometers
+  duration      Int    // in minutes
+}
+
+type Payment {
+  method        PaymentMethod
+  status        PaymentStatus @default(PENDING)
+  transactionId String?
+  paidAt        DateTime?
+}
+
+enum PaymentMethod {
+  CASH
+  UPI
+  CARD
+}
+
+enum PaymentStatus {
+  PENDING
+  COMPLETED
+  FAILED
+}
