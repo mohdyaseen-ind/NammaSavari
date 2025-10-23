@@ -2,6 +2,8 @@
 
 import { useState } from 'react'
 
+console.log('Man im reallllll')
+
 export default function TestAuthPage() {
   const [result, setResult] = useState('')
 
