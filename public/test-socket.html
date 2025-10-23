@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Socket.io Test</title>
+  <script src="https://cdn.socket.io/4.5.4/socket.io.min.js"></script>
+</head>
+<body>
+  <h1>Socket.io Test</h1>
+  <button onclick="sayHello()">Say Hello</button>
+  <div id="messages"></div>
+
+  <script>
+    // Connect to server (like fetch, but keeps connection open)
+    const socket = io('http://localhost:3001')
+
+    // When connected
+    socket.on('connect', () => {
+      console.log('Connected to server!')
+      document.getElementById('messages').innerHTML += '<p>✅ Connected!</p>'
+    })
+
+    // Listen for server's response
+    socket.on('hello-response', (data) => {
+      console.log('Server said:', data.message)
+      document.getElementById('messages').innerHTML += `<p>Server: ${data.message}</p>`
+    })
+
+    // Function to send hello
+    function sayHello() {
+      socket.emit('hello', { message: 'Hi from client!' })
+      document.getElementById('messages').innerHTML += '<p>You: Hi from client!</p>'
+    }
+  </script>
+</body>
+</html>
