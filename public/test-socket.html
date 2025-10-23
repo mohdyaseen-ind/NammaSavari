@@ -1,34 +1,50 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <title>Socket.io Test</title>
+  <title>Driver Test</title>
   <script src="https://cdn.socket.io/4.5.4/socket.io.min.js"></script>
 </head>
 <body>
-  <h1>Socket.io Test</h1>
-  <button onclick="sayHello()">Say Hello</button>
-  <div id="messages"></div>
+  <h1>Driver Test Interface</h1>
+  <button onclick="goOnline()">Go Online</button>
+  <button onclick="updateLocation()">Update Location</button>
+  <button onclick="goOffline()">Go Offline</button>
+  <div id="status"></div>
 
   <script>
-    // Connect to server (like fetch, but keeps connection open)
     const socket = io('http://localhost:3001')
+    const driverId = 'driver_' + Math.random().toString(36).substr(2, 9)
 
-    // When connected
     socket.on('connect', () => {
-      console.log('Connected to server!')
-      document.getElementById('messages').innerHTML += '<p>✅ Connected!</p>'
+      document.getElementById('status').innerHTML = `✅ Connected as ${driverId}`
     })
 
-    // Listen for server's response
-    socket.on('hello-response', (data) => {
-      console.log('Server said:', data.message)
-      document.getElementById('messages').innerHTML += `<p>Server: ${data.message}</p>`
-    })
+    function goOnline() {
+      socket.emit('driver:online', {
+        userId: driverId,
+        location: { lat: 28.7041, lng: 77.1025 },
+        vehicleType: 'BIKE',
+        vehicleNumber: 'DL01AB1234',
+        vehicleModel: 'Honda Activa',
+        licensePlate: 'DL01AB1234'
+      })
+      document.getElementById('status').innerHTML += '<br>🚗 Went online!'
+    }
 
-    // Function to send hello
-    function sayHello() {
-      socket.emit('hello', { message: 'Hi from client!' })
-      document.getElementById('messages').innerHTML += '<p>You: Hi from client!</p>'
+    function updateLocation() {
+      socket.emit('driver:location', {
+        userId: driverId,
+        location: {
+          lat: 28.7041 + Math.random() * 0.01,
+          lng: 77.1025 + Math.random() * 0.01
+        }
+      })
+      document.getElementById('status').innerHTML += '<br>📍 Location updated!'
+    }
+
+    function goOffline() {
+      socket.emit('driver:offline', { userId: driverId })
+      document.getElementById('status').innerHTML += '<br>🔴 Went offline!'
     }
   </script>
 </body>
